@@ -159,9 +159,21 @@ async def ping(client, message: Message):
 
 
 
+
+
+
 user_states = {}
 
-@Mukesh.on_message(filters.command(["send", "smtp"])) async def smtp_command_handler(client: Client, message: Message): user_states[message.chat.id] = {"step": "awaiting_count"} await message.reply("Kaç defa göndermek istiyorsun? (sayı yaz)")
+SENDPULSE_API_ID = "e31aa80bb04eb522dc33955124c92e8d" SENDPULSE_API_SECRET = "2778cdd82721f2a55358c33893c97f8b"
+
+@Mukesh.on_message(filters.command(["send", "smtp"])) async def smtp_command_handler(client: Client, message: Message): user_states[message.chat.id] = {"step": "awaiting_service"} markup = InlineKeyboardMarkup([ [InlineKeyboardButton("SendPulse", callback_data="smtp_sendpulse")] ]) await message.reply("Merhaba 👋\nAşağıdakilerden bir servis seçiniz:", reply_markup=markup)
+
+@Mukesh.on_callback_query() async def handle_service_selection(client: Client, callback_query: CallbackQuery): chat_id = callback_query.message.chat.id data = callback_query.data
+
+if chat_id in user_states and data == "smtp_sendpulse":
+    user_states[chat_id]["service"] = "sendpulse"
+    user_states[chat_id]["step"] = "awaiting_count"
+    await callback_query.message.reply("Kaç defa göndermek istiyorsun? (sayı yaz)")
 
 @Mukesh.on_message(filters.text & filters.private) async def handle_user_input(client: Client, message: Message): chat_id = message.chat.id if chat_id not in user_states: return  # bu kullanıcı smtp başlatmadı
 
@@ -182,32 +194,29 @@ elif state["step"] == "awaiting_email":
     email = message.text.strip()
     state["email"] = email
     await message.reply(f"{email} kayıt edildi, gönderim başlıyor...")
-    csrf_token, csrf_token0 = get_csrf_tokens()
-    if csrf_token and csrf_token0:
-        threading.Thread(target=send_emails, args=(csrf_token, csrf_token0, email, state["count"], chat_id)).start()
-    else:
-        await message.reply("CSRF token alınamadı.")
+    threading.Thread(target=sendpulse_emails, args=(email, state["count"], chat_id)).start()
     del user_states[chat_id]
 
-def get_csrf_tokens(): url = "https://lexica.art/api/auth/csrf" headers = { 'User-Agent': "Mozilla/5.0 (Android)", } try: response = requests.get(url, headers=headers) if response.status_code == 200: data = response.json() csrf_token = data.get("csrfToken") csrf_token0 = response.cookies.get("__Host-next-auth.csrf-token") return csrf_token, csrf_token0 except Exception as e: print(f"Hata: {e}") return None, None
+def sendpulse_emails(email, count, chat_id): # Token alma token_url = "https://api.sendpulse.com/oauth/access_token" token_data = { "grant_type": "client_credentials", "client_id": SENDPULSE_API_ID, "client_secret": SENDPULSE_API_SECRET } token_response = requests.post(token_url, data=token_data) if token_response.status_code != 200: Mukesh.send_message(chat_id, "🔴 SendPulse token alınamadı.") return
 
-def send_email_request(csrf_token, csrf_token0, email): url = "https://lexica.art/api/auth/signin/email" payload = f"email={email}&redirect=false&callbackUrl=https%3A%2F%2Flexica.art%2Faccount&csrfToken={csrf_token}" headers = { 'User-Agent': "Mozilla/5.0", 'Content-Type': "application/x-www-form-urlencoded", 'Cookie': f"__Host-next-auth.csrf-token={csrf_token0}; __Secure-next-auth.callback-url=https%3A%2F%2Flexica.art" } return requests.post(url, data=payload, headers=headers)
+access_token = token_response.json().get("access_token")
 
-def send_emails(csrf_token, csrf_token0, email, count, chat_id): for i in range(count): res1 = send_email_request(csrf_token, csrf_token0, email) Mukesh.send_message(chat_id, f"Lexica Email {i+1} {'✅' if res1.status_code == 200 else f'❌ ({res1.status_code})'}")
+# E-posta gönderim
+headers = {
+    "Authorization": f"Bearer {access_token}",
+    "Content-Type": "application/json"
+}
+for i in range(count):
+    data = {
+        "email": email,
+        "sender": {"name": "AI Mailer", "email": "mailer@viosproject.ai"},
+        "subject": "Test Mail",
+        "text": "Bu bir deneme mesajıdır. Deepseek bot ile gönderildi."
+    }
+    res = requests.post("https://api.sendpulse.com/smtp/emails", headers=headers, data=json.dumps(data))
+    Mukesh.send_message(chat_id, f"SendPulse Email {i+1} {'✅' if res.status_code == 200 else f'❌ ({res.status_code})'}")
 
-res2 = requests.post(
-        "https://backend.vocs.ai/api/user/sendotp",
-        headers={
-            'User-Agent': "Mozilla/5.0",
-            'Content-Type': "application/json",
-            'origin': "https://www.vocs.ai"
-        },
-        data=json.dumps({"email": email})
-    )
-    Mukesh.send_message(chat_id, f"Vocs OTP {i+1} {'✅' if res2.status_code == 200 else f'❌ ({res2.status_code})'}")
-
-Mukesh.send_message(chat_id, "✅ İşlem tamamlandı.")
-
+Mukesh.send_message(chat_id, "✅ SendPulse işlemi tamamlandı.")
     
             
 
