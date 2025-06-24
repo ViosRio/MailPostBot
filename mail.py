@@ -5,7 +5,7 @@ import threading
 import json
 
 bot = telebot.TeleBot(input("token: "))
-print('Go to the bot and send /start command to start spamming.')
+print('Go to the bot and send /start command to start.')
 dataaaaa = {} 
 def Kk():
     url = "https://lexica.art/api/auth/csrf"
