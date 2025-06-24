@@ -158,65 +158,83 @@ async def ping(client, message: Message):
 
 
 
-
-
-
-
 user_states = {}
 
-SENDPULSE_API_ID = "e31aa80bb04eb522dc33955124c92e8d" SENDPULSE_API_SECRET = "2778cdd82721f2a55358c33893c97f8b"
+SENDPULSE_API_ID = "e31aa80bb04eb522dc33955124c92e8d"
+SENDPULSE_API_SECRET = "2778cdd82721f2a55358c33893c97f8b"
 
-@Mukesh.on_message(filters.command(["send", "smtp"])) async def smtp_command_handler(client: Client, message: Message): user_states[message.chat.id] = {"step": "awaiting_service"} markup = InlineKeyboardMarkup([ [InlineKeyboardButton("SendPulse", callback_data="smtp_sendpulse")] ]) await message.reply("Merhaba 👋\nAşağıdakilerden bir servis seçiniz:", reply_markup=markup)
+@Mukesh.on_message(filters.command(["send", "smtp"]))
+async def smtp_command_handler(client: Client, message: Message):
+    user_states[message.chat.id] = {"step": "awaiting_service"}
+    markup = InlineKeyboardMarkup([
+        [InlineKeyboardButton("SendPulse", callback_data="smtp_sendpulse")]
+    ])
+    await message.reply("Merhaba 👋\nAşağıdakilerden bir servis seçiniz:", reply_markup=markup)
 
-@Mukesh.on_callback_query() async def handle_service_selection(client: Client, callback_query: CallbackQuery): chat_id = callback_query.message.chat.id data = callback_query.data
+@Mukesh.on_callback_query(filters.regex("^smtp_"))
+async def handle_service_selection(client: Client, callback_query: CallbackQuery):
+    chat_id = callback_query.message.chat.id
+    data = callback_query.data
 
-if chat_id in user_states and data == "smtp_sendpulse":
-    user_states[chat_id]["service"] = "sendpulse"
-    user_states[chat_id]["step"] = "awaiting_count"
-    await callback_query.message.reply("Kaç defa göndermek istiyorsun? (sayı yaz)")
+    if chat_id in user_states and data == "smtp_sendpulse":
+        user_states[chat_id]["service"] = "sendpulse"
+        user_states[chat_id]["step"] = "awaiting_count"
+        await callback_query.message.reply("Kaç defa göndermek istiyorsun? (sayı yaz)")
 
-@Mukesh.on_message(filters.text & filters.private) async def handle_user_input(client: Client, message: Message): chat_id = message.chat.id if chat_id not in user_states: return  # bu kullanıcı smtp başlatmadı
+@Mukesh.on_message(filters.text & filters.private)
+async def handle_user_input(client: Client, message: Message):
+    chat_id = message.chat.id
+    if chat_id not in user_states:
+        return
 
-state = user_states[chat_id]
+    state = user_states[chat_id]
 
-# 1. adım: sayı girişi
-if state["step"] == "awaiting_count":
-    try:
-        count = int(message.text.strip())
-        state["count"] = count
-        state["step"] = "awaiting_email"
-        await message.reply("E-posta adresini gir:")
-    except ValueError:
-        await message.reply("Geçerli bir sayı gir.")
+    if state["step"] == "awaiting_count":
+        try:
+            count = int(message.text.strip())
+            state["count"] = count
+            state["step"] = "awaiting_email"
+            await message.reply("E-posta adresini gir:")
+        except ValueError:
+            await message.reply("Geçerli bir sayı gir.")
 
-# 2. adım: e-posta girişi
-elif state["step"] == "awaiting_email":
-    email = message.text.strip()
-    state["email"] = email
-    await message.reply(f"{email} kayıt edildi, gönderim başlıyor...")
-    threading.Thread(target=sendpulse_emails, args=(email, state["count"], chat_id)).start()
-    del user_states[chat_id]
+    elif state["step"] == "awaiting_email":
+        email = message.text.strip()
+        state["email"] = email
+        await message.reply(f"{email} kayıt edildi, gönderim başlıyor...")
+        threading.Thread(target=sendpulse_emails, args=(email, state["count"], chat_id)).start()
+        del user_states[chat_id]
 
-def sendpulse_emails(email, count, chat_id): # Token alma token_url = "https://api.sendpulse.com/oauth/access_token" token_data = { "grant_type": "client_credentials", "client_id": SENDPULSE_API_ID, "client_secret": SENDPULSE_API_SECRET } token_response = requests.post(token_url, data=token_data) if token_response.status_code != 200: Mukesh.send_message(chat_id, "🔴 SendPulse token alınamadı.") return
-
-access_token = token_response.json().get("access_token")
-
-# E-posta gönderim
-headers = {
-    "Authorization": f"Bearer {access_token}",
-    "Content-Type": "application/json"
-}
-for i in range(count):
-    data = {
-        "email": email,
-        "sender": {"name": "AI Mailer", "email": "mailer@viosproject.ai"},
-        "subject": "Test Mail",
-        "text": "Bu bir deneme mesajıdır. Deepseek bot ile gönderildi."
+def sendpulse_emails(email, count, chat_id):
+    token_url = "https://api.sendpulse.com/oauth/access_token"
+    token_data = {
+        "grant_type": "client_credentials",
+        "client_id": SENDPULSE_API_ID,
+        "client_secret": SENDPULSE_API_SECRET
     }
-    res = requests.post("https://api.sendpulse.com/smtp/emails", headers=headers, data=json.dumps(data))
-    Mukesh.send_message(chat_id, f"SendPulse Email {i+1} {'✅' if res.status_code == 200 else f'❌ ({res.status_code})'}")
+    token_response = requests.post(token_url, data=token_data)
+    if token_response.status_code != 200:
+        Mukesh.send_message(chat_id, "🔴 SendPulse token alınamadı.")
+        return
 
-Mukesh.send_message(chat_id, "✅ SendPulse işlemi tamamlandı.")
+    access_token = token_response.json().get("access_token")
+
+    headers = {
+        "Authorization": f"Bearer {access_token}",
+        "Content-Type": "application/json"
+    }
+
+    for i in range(count):
+        data = {
+            "email": email,
+            "sender": {"name": "AI Mailer", "email": "mailer@viosproject.ai"},
+            "subject": "Test Mail",
+            "text": "Bu bir deneme mesajıdır. Deepseek bot ile gönderildi."
+        }
+        res = requests.post("https://api.sendpulse.com/smtp/emails", headers=headers, data=json.dumps(data))
+        Mukesh.send_message(chat_id, f"SendPulse Email {i+1} {'✅' if res.status_code == 200 else f'❌ ({res.status_code})'}")
+
+    Mukesh.send_message(chat_id, "✅ SendPulse işlemi tamamlandı.")
     
             
 
