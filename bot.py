@@ -239,17 +239,20 @@ if SOURCE != s:
     sys.exit(1)  
         
         
+if __name__ == "__main__":
+    print(f""" {BOT_NAME} Başarılı!
+    """)
+    try:
+        Mukesh.start()
+        print(f"""JOIN  @MR_SUKKUN
+GIVE STAR TO THE REPO 
+{BOT_NAME} Başarılı !  
+        """)
+        idle()
+        Mukesh.stop()
+        print("Bot stopped. Bye !")
+
     except (ApiIdInvalid, ApiIdPublishedFlood):
         raise Exception("Your API_ID/API_HASH is not valid.")
     except AccessTokenInvalid:
         raise Exception("Your BOT_TOKEN is not valid.")
-    print(f"""JOIN  @MR_SUKKUN
-GIVE STAR TO THE REPO 
- {BOT_NAME} Başarılı !  
-    """)
-    idle()
-    Mukesh.stop()
-    print("Bot stopped. Bye !")
-#-----------CREDITS -----------
-# telegram : @legend_coder
-# github : noob-mukesh
