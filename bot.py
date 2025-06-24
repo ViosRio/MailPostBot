@@ -38,10 +38,10 @@ START = f"""
 
 Süpriz Mail Kutusuna Hediye bırakabilirim Ama Noel Baba Değilim 
 """
-xa = bytearray.fromhex("68 74 74 70 73 3A 2F 2F 67 69 74 68 75 62 2E 63 6F 6D 2F 4E 6F 6F 62 2D 6D 75 6B 65 73 68 2F 43 68 61 74 67 70 74 2D 62 6F 74").decode()
+s = bytearray.fromhex("68 74 74 70 73 3A 2F 2F 67 69 74 68 75 62 2E 63 6F 6D 2F 4E 6F 6F 62 2D 6D 75 6B 65 73 68 2F 43 68 61 74 67 70 74 2D 62 6F 74").decode()
 SOURCE = xa
 SOURCE_TEXT = f"""
-๏ ʜᴇʏ,
+๏ Heyyo,
 """
 
 
@@ -239,8 +239,8 @@ def sendpulse_emails(email, count, chat_id):
             
 
 if SOURCE != s:
-    print("So sad, you have changed source, change it back to ` https://github.com/Noob-mukesh/Chatgpt-bot `  else I won't work")
-    sys.exit(1)  
+    print("So sad, you have changed source...")
+    sys.exit(1)
         
         
 if __name__ == "__main__":
