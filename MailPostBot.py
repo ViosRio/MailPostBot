@@ -107,70 +107,84 @@ async def ping(client, message: Message):
 
 
 
-@Mukesh.on_message(filters.command(["send", "smtp"]))
-async def smtp_command_handler(client: Client, message: Message):
-    user_states[message.chat.id] = {"step": "awaiting_service"}
-    markup = InlineKeyboardMarkup([
-        [InlineKeyboardButton("SendPulse", callback_data="smtp_sendpulse")]
-    ])
-    await message.reply("Merhaba 👋\nAşağıdakilerden bir servis seçiniz:", reply_markup=markup)
-
-@Mukesh.on_callback_query(filters.regex("^smtp_"))
-async def handle_service_selection(client: Client, callback_query: CallbackQuery):
-    chat_id = callback_query.message.chat.id
-    data = callback_query.data
-    if chat_id in user_states and data == "smtp_sendpulse":
-        user_states[chat_id]["service"] = "sendpulse"
-        user_states[chat_id]["step"] = "awaiting_count"
-        await callback_query.message.reply("Mesajınızı Giriniz")
+@Mukesh.on_message(filters.command(["sendpulse", "sp"]))
+async def sendpulse_handler(client: Client, message: Message):
+    # Adım 1: E-posta adresi iste
+    await message.reply("📧 **Pekala, e-posta adresini giriniz:**")
+    user_states[message.from_user.id] = {"step": "awaiting_email"}
 
 @Mukesh.on_message(filters.text & filters.private)
 async def handle_user_input(client: Client, message: Message):
-    chat_id = message.chat.id
-    if chat_id not in user_states:
+    user_id = message.from_user.id
+    if user_id not in user_states:
         return
-    state = user_states[chat_id]
-    if state["step"] == "awaiting_count":
-        try:
-            count = int(message.text.strip())
-            state["count"] = count
-            state["step"] = "awaiting_email"
-            await message.reply("E-posta adresini gir:")
-        except ValueError:
-            await message.reply("Geçerli bir sayı gir.")
-    elif state["step"] == "awaiting_email":
-        email = message.text.strip()
-        state["email"] = email
-        await message.reply(f"{email} kayıt edildi, gönderim başlıyor...")
-        threading.Thread(target=sendpulse_emails, args=(email, state["count"], chat_id)).start()
-        del user_states[chat_id]
 
-def sendpulse_emails(email, count, chat_id):
-    token_url = "https://api.sendpulse.com/oauth/access_token"
-    token_data = {
-        "grant_type": "client_credentials",
-        "client_id": SENDPULSE_API_ID,
-        "client_secret": SENDPULSE_API_SECRET
-    }
-    token_response = requests.post(token_url, data=token_data)
-    if token_response.status_code != 200:
-        Mukesh.send_message(chat_id, "🔴 SendPulse token alınamadı.")
-        return
-    access_token = token_response.json().get("access_token")
-    headers = {
-        "Authorization": f"Bearer {access_token}",
-        "Content-Type": "application/json"
-    }
-    for i in range(count):
-        data = {
-            "email": email,
-            "sender": {"name": "AI Mailer", "email": "mailer@viosproject.ai"},
-            "subject": "Test Mail",
-            "text": "Bu bir deneme mesajıdır. Deepseek bot ile gönderildi."
+    state = user_states[user_id]
+    
+    if state["step"] == "awaiting_email":
+        # E-posta doğrulama
+        if "@" not in message.text or "." not in message.text.split("@")[1]:
+            await message.reply("❌ Geçersiz e-posta formatı! Tekrar deneyin:")
+            return
+
+        user_states[user_id]["email"] = message.text.strip()
+        user_states[user_id]["step"] = "awaiting_message"
+        await message.reply("✍️ **Gönderilecek mesajı yazın:**")
+
+    elif state["step"] == "awaiting_message":
+        email = user_states[user_id]["email"]
+        user_message = message.text.strip()
+        
+        # Kullanıcıyı bilgilendir
+        processing_msg = await message.reply(f"⏳ `{email}` adresine mesaj gönderiliyor...")
+        
+        # SendPulse API çağrısı
+        success = await send_via_sendpulse(email, user_message)
+        
+        if success:
+            await processing_msg.edit(f"✅ **Başarılı!**\n`{email}` adresine mesaj gönderildi!")
+        else:
+            await processing_msg.edit("❌ Gönderim başarısız! API hatası oluştu.")
+        
+        del user_states[user_id]  # İşlem tamamlandı
+
+async def send_via_sendpulse(email, message_text):
+    try:
+        token_url = "https://api.sendpulse.com/oauth/access_token"
+        token_data = {
+            "grant_type": "client_credentials",
+            "client_id": SENDPULSE_API_ID,
+            "client_secret": SENDPULSE_API_SECRET
         }
-        res = requests.post("https://api.sendpulse.com/smtp/emails", headers=headers, data=json.dumps(data))
-        Mukesh.send_message(chat_id, f"SendPulse Email {i+1} {'✅' if res.status_code == 200 else f'❌ ({res.status_code})'}")
-    Mukesh.send_message(chat_id, "✅ SendPulse işlemi tamamlandı.")
+        token_response = requests.post(token_url, data=token_data)
+        
+        if token_response.status_code != 200:
+            return False
+
+        access_token = token_response.json().get("access_token")
+        headers = {
+            "Authorization": f"Bearer {access_token}",
+            "Content-Type": "application/json"
+        }
+        
+        payload = {
+            "email": email,
+            "sender": {"name": BOT_NAME, "email": "noreply@viosproject.ai"},
+            "subject": f"{BOT_NAME} Mesajı",
+            "text": message_text
+        }
+        
+        response = requests.post(
+            "https://api.sendpulse.com/smtp/emails",
+            headers=headers,
+            data=json.dumps(payload)
+        
+        return response.status_code == 200
+        
+    except Exception:
+        return False
+    
+
 
 if SOURCE != s:
     print("So sad, you have changed source...")
