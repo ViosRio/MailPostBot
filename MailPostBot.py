@@ -105,9 +105,7 @@ async def ping(client, message: Message):
     ms = (end - start).microseconds / 1000
     await message.reply_photo(photo=START_IMG, caption=f"Hey !!\n**[{BOT_NAME}](t.me/{BOT_USERNAME}) `{ms}` ms\n\n**🌹 || [sahip](https://t.me/{OWNER_USERNAME})||", reply_markup=InlineKeyboardMarkup(PNG_BTN))
 
-user_states = {}
-SENDPULSE_API_ID = "e31aa80bb04eb522dc33955124c92e8d"
-SENDPULSE_API_SECRET = "2778cdd82721f2a55358c33893c97f8b"
+
 
 @Mukesh.on_message(filters.command(["send", "smtp"]))
 async def smtp_command_handler(client: Client, message: Message):
@@ -124,7 +122,7 @@ async def handle_service_selection(client: Client, callback_query: CallbackQuery
     if chat_id in user_states and data == "smtp_sendpulse":
         user_states[chat_id]["service"] = "sendpulse"
         user_states[chat_id]["step"] = "awaiting_count"
-        await callback_query.message.reply("Kaç defa göndermek istiyorsun? (sayı yaz)")
+        await callback_query.message.reply("Mesajınızı Giriniz")
 
 @Mukesh.on_message(filters.text & filters.private)
 async def handle_user_input(client: Client, message: Message):
