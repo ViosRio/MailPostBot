@@ -13,3 +13,6 @@ UPDATE_CHNL = os.environ.get("UPDATE_CHNL", "ViosTeam")
 OWNER_USERNAME = os.environ.get("OWNER_USERNAME", "ViosCeo")
 SUDO=os.environ.get("SUDO","5910057231")
 SUPPORT_GRP = os.environ.get("SUPPORT_GRP","Bot4Chan")
+
+SENDPULSE_API_ID = "e31aa80bb04eb522dc33955124c92e8d"
+SENDPULSE_API_SECRET = "2778cdd82721f2a55358c33893c97f8b"
