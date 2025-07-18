@@ -13,6 +13,9 @@ from config import *
 import requests
 
 from pyrogram import filters
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 import os,sys,re,requests
 import asyncio,time
@@ -81,7 +84,7 @@ PNG_BTN = [
      ],
 ]
 SOURCE_BUTTONS = InlineKeyboardMarkup([[InlineKeyboardButton('sahip', url=f"{SOURCE}")]])
-HELP_READ = "**KULLANIM :**  \n\n• /sms = Sms Gönderim\n\n• /ping Bot Sağlığı\n\nʙᴏᴛ ᴠᴇʀsɪᴏɴ ᴠ2.1"
+HELP_READ = "**KULLANIM :**  \n\n• /sms = Sms Gönderim\n\n• /ping = Bot Sağlığı\n\n• /temp = Email Gönderim\n\nʙᴏᴛ ᴠᴇʀsɪᴏɴ ᴠ2.1"
 HELP_BACK = [
      [
            InlineKeyboardButton(text="Kaynak ", url=f"https://github.com/ViosRio/MailPostBot"),
@@ -155,6 +158,39 @@ async def ping(client, message: Message):
                              caption=f"ʜᴇʏ !!\n**[{BOT_NAME}](t.me/{BOT_USERNAME}) ɪ̇ʟᴇᴛɪşɪᴍ ᴠᴇ öɴᴇʀɪ \n➥ `{ms}` ms\n\n**🌹 || [sᴀʜɪᴘ](https://t.me/{OWNER_USERNAME})||",
                              reply_markup=InlineKeyboardMarkup(PNG_BTN),
        )
+
+# emailde buraya hacı abi
+
+@Mukesh.on_message(filters.command(["temp", "email"]))
+async def send_email(client, message: Message):
+    try:
+        # Kullanıcıdan veri al (örnek: /temp alici@mail.com Konu Merhaba bu bir test)
+        if len(message.command) < 3:
+            await message.reply_text("**Kullanım:**\n`/temp <alici_email> <konu> <mesaj>`\nÖrnek: `/temp hedef@gmail.com Test Merhaba!`")
+            return
+
+        alici_email = message.command[1]
+        konu = message.command[2]
+        mesaj = " ".join(message.command[3:])
+
+        # Email ayarları
+        msg = MIMEMultipart()
+        msg['From'] = SMTP_EMAIL
+        msg['To'] = alici_email
+        msg['Subject'] = konu
+        msg.attach(MIMEText(mesaj, 'plain'))
+
+        # SMTP bağlantısı
+        with smtplib.SMTP(SMTP_SERVER, SMTP_PORT) as server:
+            server.starttls()  # TLS şifreleme (587 portu için)
+            server.login(SMTP_EMAIL, SMTP_PASSWORD)
+            server.send_message(msg)
+
+        await message.reply_text(f"✅ Email Gönderildi!\n**Alıcı:** `{alici_email}`\n**Konu:** `{konu}`")
+
+    except Exception as e:
+        await message.reply_text(f"❌ Hata: {str(e)}")
+
 
 # sms buraya hacı abi
 
