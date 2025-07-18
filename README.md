@@ -1,4 +1,7 @@
-<h1 align="center">🔥 ViosRio MailPostBot Deep Seek 🔥</h1>
+<h1 align="center">ViosRio
+  MailPostBot
+  
+  Deep Seek 🔥</h1>
 
 <p align="center">
   <b>SMTP ile E-posta Doğrulama ve Gönderim Botu</b> | Telegram üzerinden kolay e-posta yönetimi!
