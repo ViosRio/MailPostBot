@@ -159,7 +159,30 @@ async def ping(client, message: Message):
 # sms buraya hacı abi
 
 @Mukesh.on_message(filters.command(["sms", "text"]))
+async def send_sms(client, message: Message):
+    try:
+        # Kullanıcıdan mesaj ve numara al
+        if len(message.command) < 3:
+            await message.reply_text("**Kullanım :**\n\n• /sms +9054490900 SELAM CERENİM SENİ ÖZLEDİM")
+            return
 
+        phone_number = message.command[1]
+        sms_text = " ".join(message.command[2:])
+
+        # Twilio ile SMS gönder
+        from twilio.rest import Client
+        client_twilio = Client(TWILIO_SID, TWILIO_TOKEN)
+        
+        sms = client_twilio.messages.create(
+            body=sms_text,
+            messaging_service_sid=TWILIO_SERVICE_SID,
+            to=phone_number
+        )
+
+        await message.reply_text(f"✅ SMS gönderildi!\n**Numara :** `{phone_number}`\n**SID:** `{sms.sid}`")
+        
+    except Exception as e:
+        await message.reply_text(f"❌ Hata: {str(e)}")
         
 
     
