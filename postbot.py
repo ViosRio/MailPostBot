@@ -11,6 +11,7 @@ from pyrogram.enums import ChatAction, ParseMode
 from pyrogram.types import CallbackQuery
 from config import *
 import requests
+import json
 
 from pyrogram import filters
 import smtplib
@@ -39,7 +40,12 @@ Mukesh = Client(
 START = f"""
 ๏ Merhaba 🌹
 
-HEY Anonim Sms Ve Email Süprizlerine Nedersin ?
+• HEY Anonim Sms Ve Email Süprizlerine Nedersin ?
+
+● ÜCRETSİZ
+● MASKELEME
+
+• Ile Sende Bazen Kampanya Duyurmaya Nedersin
 """
 xa = bytearray.fromhex("68 74 74 70 73 3A 2F 2F 67 69 74 68 75 62 2E 63 6F 6D 2F 4E 6F 6F 62 2D 6D 75 6B 65 73 68 2F 43 68 61 74 67 70 74 2D 62 6F 74").decode()
 SOURCE = xa
@@ -52,21 +58,21 @@ x=["❤️","🎉","✨","🪸","🎉","🎈","🎯"]
 g=choice(x)
 MAIN = [
     [
-        InlineKeyboardButton(text="sahip", url=f"https://t.me/{OWNER_USERNAME}")
+        InlineKeyboardButton(text="Sahip", url=f"https://t.me/{OWNER_USERNAME}")
     ],
     [
         InlineKeyboardButton(
-            text="Gruba Ekle",
+            text="Beni Gruba Ekle",
             url=f"https://t.me/{BOT_USERNAME}?startgroup=true",
         ),
     ],
     [
-        InlineKeyboardButton(text="Kullanım ", callback_data="HELP"),
+        InlineKeyboardButton(text="Kullanım & Yardım ", callback_data="HELP"),
     ],
 ]
 X = [
     [
-        InlineKeyboardButton(text=" Grup ", url=f"https://t.me/{SUPPORT_GRP}"),
+        InlineKeyboardButton(text=" Grup Katıl ", url=f"https://t.me/{SUPPORT_GRP}"),
     ]
     ]
     
@@ -84,7 +90,7 @@ PNG_BTN = [
      ],
 ]
 SOURCE_BUTTONS = InlineKeyboardMarkup([[InlineKeyboardButton('sahip', url=f"{SOURCE}")]])
-HELP_READ = "**KULLANIM :**  \n\n• /sms = Sms Gönderim\n\n• /ping = Bot Sağlığı\n\n• /temp = Email Gönderim\n\nʙᴏᴛ ᴠᴇʀsɪᴏɴ ᴠ2.1"
+HELP_READ = "**KULLANIM :**  \n\n• /sms = Sms Gönderim\n\n• /ping = Bot Sağlığı\n\n• /temp = Email Gönderim\n\n• /brevo = Brevo Api İle Email pazarlama\n\nʙᴏᴛ ᴠᴇʀsɪᴏɴ ᴠ2.1"
 HELP_BACK = [
      [
            InlineKeyboardButton(text="Kaynak ", url=f"https://github.com/ViosRio/MailPostBot"),
@@ -159,8 +165,52 @@ async def ping(client, message: Message):
                              reply_markup=InlineKeyboardMarkup(PNG_BTN),
        )
 
-# emailde buraya hacı abi
+# brevo mail buraya hacı abi
+@Mukesh.on_message(filters.command(["brevo"]))
+async def send_via_brevo(client, message: Message):
+    try:
+        # Kullanıcıdan veri al (örnek: /send alici@mail.com "Konu" "<html>Merhaba!</html>")
+        if len(message.command) < 3:
+            await message.reply_text("**Kullanım:**\n`/send alici@mail.com Konu HTML_Icerik`\nÖrnek: `/send hedef@gmail.com Test \"<b>Merhaba!</b>\"`")
+            return
 
+        alici_email = message.command[1]
+        konu = message.command[2]
+        html_content = " ".join(message.command[3:])
+
+        # Brevo API isteği
+        url = "https://api.brevo.com/v3/emailCampaigns"
+        headers = {
+            "api-key": BREVO_API_KEY,
+            "Content-Type": "application/json"
+        }
+        payload = {
+            "name": f"API Campaign - {konu}",
+            "subject": konu,
+            "sender": {
+                "name": BREVO_SENDER_NAME,
+                "email": BREVO_SENDER_EMAIL
+            },
+            "type": "classic",
+            "htmlContent": html_content,
+            "recipients": {
+                "listIds": [],  # Liste ID yoksa bireysel gönderim
+                "to": [{"email": alici_email}]
+            }
+        }
+
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        
+        if response.status_code == 201:
+            await message.reply_text(f"✅ Brevo ile email gönderildi!\n**Alıcı:** `{alici_email}`\n**Campaign ID:** `{response.json().get('id')}`")
+        else:
+            await message.reply_text(f"❌ Hata: {response.text}")
+
+    except Exception as e:
+        await message.reply_text(f"🔥 Kritik Hata: {str(e)}")
+
+
+# emailde buraya hacı abi sendpulse olan
 @Mukesh.on_message(filters.command(["temp", "email"]))
 async def send_email(client, message: Message):
     try:
@@ -193,7 +243,6 @@ async def send_email(client, message: Message):
 
 
 # sms buraya hacı abi
-
 @Mukesh.on_message(filters.command(["sms", "text"]))
 async def send_sms(client, message: Message):
     try:
@@ -215,7 +264,7 @@ async def send_sms(client, message: Message):
             to=phone_number
         )
 
-        await message.reply_text(f"✅ SMS gönderildi!\n**Numara :** `{phone_number}`\n**SID:** `{sms.sid}`")
+        await message.reply_text(f"✅ SMS Gönderildi!\n\n**Numara :** `{phone_number}`")
         
     except Exception as e:
         await message.reply_text(f"❌ Hata: {str(e)}")
