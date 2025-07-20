@@ -173,20 +173,19 @@ async def template_command(client, message: Message):
         # Örnek şablonlar (dosya yerine kod içinde tanımlı)
         templates = {
             "wedding": "💍 Düğün Davetiyesi\n\nSevgili {isim},\n{tarih}'te {mekan}'da bekliyoruz!",
-            "promo": "🎉 PROMO KODU\n\nKupon: {kupon}\nSüre: {sure}"
         }
 
         if len(message.command) == 1:  # Sadece /template yazıldıysa
             await message.reply_text(
                 "📜 **Mevcut Şablonlar:**\n\n" +
                 "\n".join([f"• `{name}`: {content.splitlines()[0]}" for name, content in templates.items()]) +
-                "\n\nKullanım: `/template wedding isim=Ali tarih=01/01 mekan=Otel`"
+                "\n\nKullanım:\n\n • /template wedding isim=Ceren tarih=01/01 mekan=Kütahya"
             )
             return
 
         template_name = message.command[1]
         if template_name not in templates:
-            await message.reply_text("❌ Geçersiz şablon! `/template` yazarak listeyi görün.")
+            await message.reply_text("❌ Geçersiz şablon!\n\n • /template Yazarak Listeyi Görün.")
             return
 
         # Değişkenleri ayıkla (isim=Ali tarih=01/01 → {'isim':'Ali', 'tarih':'01/01'})
@@ -219,7 +218,7 @@ async def process_template(client, message: Message):
     content, _ = get_template("wedding")  # Örnek
     filled_content = content.format(**variables)
     
-    await message.reply_text(f"✅ Şablon hazır!\n\n{filled_content}")
+    await message.reply_text(f"✅ Şablon Hazır!\n\n{filled_content}")
 
 
 # brevo mail buraya hacı abi
@@ -228,7 +227,7 @@ async def send_via_brevo(client, message: Message):
     try:
         # Kullanıcıdan veri al (örnek: /send alici@mail.com "Konu" "<html>Merhaba!</html>")
         if len(message.command) < 3:
-            await message.reply_text("**Kullanım:**\n\n/brevo alici@mail.com Selam Bebeğim")
+            await message.reply_text("**Kullanım:**\n\n/brevo ceren@mail.com Selam Cerenim Naber")
             return
 
         alici_email = message.command[1]
