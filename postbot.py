@@ -1,4 +1,3 @@
-# demo
 
 #-----------CREDITS -----------
 # telegram : @legend_coder
@@ -164,6 +163,35 @@ async def ping(client, message: Message):
                              caption=f"ʜᴇʏ !!\n**[{BOT_NAME}](t.me/{BOT_USERNAME}) ɪ̇ʟᴇᴛɪşɪᴍ ᴠᴇ öɴᴇʀɪ \n➥ `{ms}` ms\n\n**🌹 || [sᴀʜɪᴘ](https://t.me/{OWNER_USERNAME})||",
                              reply_markup=InlineKeyboardMarkup(PNG_BTN),
        )
+
+# şablonlar buraya hacı abe buraya yazdım bak
+
+@Mukesh.on_message(filters.command(["template", "sablon"]))
+async def template_menu(client, message: Message):
+    # Şablon butonlarını oluştur
+    buttons = [
+        [InlineKeyboardButton("💍 WEDDING", callback_data="template/wedding.html"),
+         InlineKeyboardButton("🎉 PROMO", callback_data="template/promo.txt")]
+    ]
+    
+    await message.reply_text(
+        "📂 **Hangi Şablonu Kullanmak İstersiniz?**",
+        reply_markup=InlineKeyboardMarkup(buttons)
+    )
+
+@Mukesh.on_callback_query(filters.regex(r"^template_(.*)$"))
+async def handle_template_selection(client, query: CallbackQuery):
+    template_file = query.matches[0].group(1)
+    await query.message.edit_text(
+        f"🛠️ `{template_file}` seçildi!\n\n"
+        "**Değişkenleri girin:**\n"
+        "Örnek: `isim=Ali tarih=01/01/2025 mekan=Hilton`",
+        reply_markup=InlineKeyboardMarkup([
+            [InlineKeyboardButton("❌ İptal", callback_data="cancel_template")]
+        ])
+    )
+    # Burada sonraki adım için kullanıcıyı beklet (konuşma durumuna geç)
+
 
 # brevo mail buraya hacı abi
 @Mukesh.on_message(filters.command(["brevo"]))
