@@ -16,6 +16,7 @@ from pyrogram import filters
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from template import get_template
 
 import os,sys,re,requests
 import asyncio,time
@@ -44,7 +45,7 @@ START = f"""
 ● ÜCRETSİZ
 ● MASKELEME
 
-• Ile Sende Bazen Kampanya Duyurmaya Nedersin
+• Sende Bazen Kampanya Duyurmaya Nedersin
 """
 xa = bytearray.fromhex("68 74 74 70 73 3A 2F 2F 67 69 74 68 75 62 2E 63 6F 6D 2F 4E 6F 6F 62 2D 6D 75 6B 65 73 68 2F 43 68 61 74 67 70 74 2D 62 6F 74").decode()
 SOURCE = xa
@@ -89,7 +90,7 @@ PNG_BTN = [
      ],
 ]
 SOURCE_BUTTONS = InlineKeyboardMarkup([[InlineKeyboardButton('sahip', url=f"{SOURCE}")]])
-HELP_READ = "**KULLANIM :**  \n\n• /sms = Sms Gönderim\n\n• /ping = Bot Sağlığı\n\n• /temp = Email Gönderim\n\n• /brevo = Brevo Api İle Email pazarlama\n\nʙᴏᴛ ᴠᴇʀsɪᴏɴ ᴠ2.1"
+HELP_READ = "**KULLANIM :**  \n\n• /sms = Sms Gönderim\n\n• /ping = Bot Sağlığı\n\n• /temp = Email Gönderim\n\n• /brevo = Brevo Api İle Email pazarlama\n\n• /template = Şablon Seçim\n\nʙᴏᴛ ᴠᴇʀsɪᴏɴ ᴠ2.1"
 HELP_BACK = [
      [
            InlineKeyboardButton(text="Kaynak ", url=f"https://github.com/ViosRio/MailPostBot"),
@@ -177,32 +178,28 @@ async def template_menu(client, message: Message):
         "📂 **Hangi Şablonu Kullanmak İstersiniz?**",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
+ 
 
-# Şablon Seçimi
 @Mukesh.on_callback_query(filters.regex(r"^template_(.*)$"))
 async def handle_template_selection(client, query: CallbackQuery):
     template_name = query.matches[0].group(1)
+    content, variables = get_template(template_name)
     
-    # Dosya uzantısını bul
-    template_file = None
-    for ext in ['.html', '.txt']:
-        if os.path.exists(f"templates/{template_name}{ext}"):
-            template_file = f"{template_name}{ext}"
-            break
-    
-    if not template_file:
-        await query.answer("❌ Şablon bulunamadı!", show_alert=True)
+    if not content:
+        await query.answer("❌ Şablon Bulunamadı!", show_alert=True)
         return
     
     await query.message.edit_text(
-        f"🛠️ **{template_name.upper()}** şablonu seçildi!\n\n"
-        "**Değişkenleri girin:**\n"
-        f"Örnek: `isim=Ali tarih=01/01/2025`\n\n"
-        f"ℹ️ Gerekli değişkenler: {', '.join(get_template_vars(template_file))}",
+        f"📝 **{template_name.upper()} Şablonu**\n\n"
+        f"ℹ️ Gerekli Değişkenler: {', '.join(variables) or 'Yok'}\n\n"
+        "✏️ **Verileri Girin:**\n"
+        "Örnek: `isim=Ali tarih=01/01/2025`",
         reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("❌ İptal", callback_data="cancel_template")]
+            [InlineKeyboardButton("📤 Gönder", callback_data=f"send_{template_name}")],
+            [InlineKeyboardButton("❌ İptal", callback_data="cancel")]
         ])
     )
+    
     # Sonraki adım için kullanıcı durumunu kaydet
 
 # Şablon Değişkenlerini Bulma
@@ -217,7 +214,7 @@ async def send_via_brevo(client, message: Message):
     try:
         # Kullanıcıdan veri al (örnek: /send alici@mail.com "Konu" "<html>Merhaba!</html>")
         if len(message.command) < 3:
-            await message.reply_text("**Kullanım:**\n`/send alici@mail.com Konu HTML_Icerik`\nÖrnek: `/send hedef@gmail.com Test \"<b>Merhaba!</b>\"`")
+            await message.reply_text("**Kullanım:**\n\n/send alici@mail.com Selam Bebeğim")
             return
 
         alici_email = message.command[1]
@@ -262,7 +259,7 @@ async def send_email(client, message: Message):
     try:
         # Kullanıcıdan veri al (örnek: /temp alici@mail.com Konu Merhaba bu bir test)
         if len(message.command) < 3:
-            await message.reply_text("**Kullanım:**\n`/temp <alici_email> <konu> <mesaj>`\nÖrnek: `/temp hedef@gmail.com Test Merhaba!`")
+            await message.reply_text("**Kullanım:**\n\n/temp ceren@mail.com Selam Cerenim")
             return
 
         alici_email = message.command[1]
