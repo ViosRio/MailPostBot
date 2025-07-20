@@ -42,4 +42,49 @@ bash startup
     <img src="https://img.shields.io/badge/Telegram-Support-blue" alt="Telegram">
   </a>
 </p>
-```
+
+
+## APİ KANALLARI
+
+`🔑 API Entegrasyon Rehberi`
+
+| Servis       | Alınacak Bilgiler                  | Kaynak Linki                     | Ücretsiz Kotası       |
+|--------------|-----------------------------------|----------------------------------|-----------------------|
+| **Twilio**   | `ACCOUNT_SID`, `AUTH_TOKEN`       | [twilio.com/console](https://www.twilio.com/console) | 15$ deneme kredisi    |
+| **Brevo**    | `API_V3_KEY`                      | [brevo.com/settings](https://app.brevo.com/settings/keys/api) | 300 mail/gün         |
+| **SendPulse**| `SMTP_USER`, `SMTP_PASSWORD`      | [sendpulse.com/smtp](https://login.sendpulse.com/settings/smtp) | 150 mail/gün        |
+
+
+**Özel Dokunuşlar:**  
+- Direkt yönlendirme linkleri ile kolay erişim  
+- Örnek kod snippet'leri  
+- Güvenlik uyarısı  
+
+
+<p align="center">
+  <a href="https://deepseek.com">
+    <img src="" width="300" alt="Powered by DeepSeek">
+  </a>
+</p>
+
+<h1 align="center">📨 ViosRio MailPostBot</h1>
+
+<div align="center">
+
+[![Telegram Destek](https://img.shields.io/badge/💬_Telegram_Grubu-t.me/ViosTeam-0088CC?style=for-the-badge&logo=telegram)](https://t.me/ViosTeam)
+[![Powered by DeepSeek](https://img.shields.io/badge/🤖_Powered_By-DeepSeek_AI-7D3C98?style=for-the-badge)](https://deepseek.com)
+
+</div>
+
+---
+
+## 🌟 Öne Çıkan Özellikler
+- `📱 Telegram Buton Entegrasyonu` - Direkt gruba katıl!
+- `🧠 DeepSeek AI Altyapısı` - Yakında gelecek yapay zeka desteği
+- `✉️ 3'ü 1 Arada API` - Twilio/Brevo/SendPulse tek botta
+
+---
+
+### 📲 Sosyal Medya
+```markdown
+[Telegram] t.me/ViosTeam
