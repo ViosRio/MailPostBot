@@ -1,7 +1,7 @@
-
 #-----------CREDITS -----------
 # telegram : @legend_coder
 # github : noob-mukesh
+
 import os
 from pyrogram import Client, filters,enums,idle
 from pyrogram.errors import ApiIdInvalid, ApiIdPublishedFlood, AccessTokenInvalid
@@ -166,7 +166,6 @@ async def ping(client, message: Message):
 
 # şablonlar buraya hacı abe buraya yazdım bak
 
-# Şablon Menüsü
 @Mukesh.on_message(filters.command(["template", "sablon"]))
 async def template_menu(client, message: Message):
     buttons = [
