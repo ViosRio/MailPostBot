@@ -14,6 +14,12 @@ SMTP_PORT = 2525  # 465 (SSL) veya 587 (TLS) de kullanabilirsin
 SMTP_EMAIL = ""
 SMTP_PASSWORD = "XRD"  # Gerçek şifreni koy!
 
+# BREVO MAIL GÖNDERME
+BREVO_API_KEY = "YOUR_API_V3_KEY"  # Brevo panelinden alınacak
+BREVO_SENDER_EMAIL = "myfromemail@mycompany.com"  # Doğrulanmış email
+BREVO_SENDER_NAME = "From name"  # Gösterilecek isim
+
+
 BOT_USERNAME = os.environ.get("BOT_USERNAME" , "HostRioBot") 
 SUDO=os.environ.get("SUDO","5910057231")
 BOT_NAME = os.environ.get("BOT_NAME", "Send Bot")
