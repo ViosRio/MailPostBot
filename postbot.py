@@ -214,7 +214,7 @@ async def send_via_brevo(client, message: Message):
     try:
         # Kullanıcıdan veri al (örnek: /send alici@mail.com "Konu" "<html>Merhaba!</html>")
         if len(message.command) < 3:
-            await message.reply_text("**Kullanım:**\n\n/send alici@mail.com Selam Bebeğim")
+            await message.reply_text("**Kullanım:**\n\n/brevo alici@mail.com Selam Bebeğim")
             return
 
         alici_email = message.command[1]
