@@ -1,9 +1,10 @@
 import os
+import re
 
 TEMPLATES_DIR = "templates"
 
-def get_template(template_name: str) -> tuple:
-    """Şablon içeriğini ve değişkenleri döndürür."""
+def get_template(template_name: str):
+    """Şablon dosyasını ve değişkenleri döndürür."""
     for ext in ['.html', '.txt']:
         file_path = os.path.join(TEMPLATES_DIR, f"{template_name}{ext}")
         if os.path.exists(file_path):
