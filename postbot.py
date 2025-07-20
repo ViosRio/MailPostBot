@@ -166,32 +166,51 @@ async def ping(client, message: Message):
 
 # şablonlar buraya hacı abe buraya yazdım bak
 
+# Şablon Menüsü
 @Mukesh.on_message(filters.command(["template", "sablon"]))
 async def template_menu(client, message: Message):
-    # Şablon butonlarını oluştur
     buttons = [
-        [InlineKeyboardButton("💍 WEDDING", callback_data="template/wedding.html"),
-         InlineKeyboardButton("🎉 PROMO", callback_data="template/promo.txt")]
+        [InlineKeyboardButton("💍 WEDDING", callback_data="template_wedding"),
+         InlineKeyboardButton("🎉 PROMO", callback_data="template_promo")],
+        [InlineKeyboardButton("📂 Tüm Şablonlar", callback_data="list_all_templates")]
     ]
-    
     await message.reply_text(
         "📂 **Hangi Şablonu Kullanmak İstersiniz?**",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
 
+# Şablon Seçimi
 @Mukesh.on_callback_query(filters.regex(r"^template_(.*)$"))
 async def handle_template_selection(client, query: CallbackQuery):
-    template_file = query.matches[0].group(1)
+    template_name = query.matches[0].group(1)
+    
+    # Dosya uzantısını bul
+    template_file = None
+    for ext in ['.html', '.txt']:
+        if os.path.exists(f"templates/{template_name}{ext}"):
+            template_file = f"{template_name}{ext}"
+            break
+    
+    if not template_file:
+        await query.answer("❌ Şablon bulunamadı!", show_alert=True)
+        return
+    
     await query.message.edit_text(
-        f"🛠️ `{template_file}` seçildi!\n\n"
+        f"🛠️ **{template_name.upper()}** şablonu seçildi!\n\n"
         "**Değişkenleri girin:**\n"
-        "Örnek: `isim=Ali tarih=01/01/2025 mekan=Hilton`",
+        f"Örnek: `isim=Ali tarih=01/01/2025`\n\n"
+        f"ℹ️ Gerekli değişkenler: {', '.join(get_template_vars(template_file))}",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("❌ İptal", callback_data="cancel_template")]
         ])
     )
-    # Burada sonraki adım için kullanıcıyı beklet (konuşma durumuna geç)
+    # Sonraki adım için kullanıcı durumunu kaydet
 
+# Şablon Değişkenlerini Bulma
+def get_template_vars(template_file):
+    with open(f"templates/{template_file}", "r") as f:
+        content = f.read()
+    return list(set(re.findall(r"\{(.*?)\}", content)))
 
 # brevo mail buraya hacı abi
 @Mukesh.on_message(filters.command(["brevo"]))
