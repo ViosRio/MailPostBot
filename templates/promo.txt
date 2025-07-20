@@ -1,5 +1,9 @@
-Sayın 
+✉️ **Metin Şablonu:**
 
-🏷️ Promosyon Kodu: 
-⏳ Sona Erme Tarihi: 
-🔗 https://github.com/ViosRio
+Sayın Ceren,
+
+🏷️ **Promosyon Kodu:** SUMMER25  
+⏳ **Sona Erme Tarihi:** 31/08/2024  
+🔗 {link}  
+
+{ek_bilgi}
