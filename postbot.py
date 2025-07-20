@@ -168,36 +168,44 @@ async def ping(client, message: Message):
 # şablonlar buraya hacı abe buraya yazdım bak
 
 @Mukesh.on_message(filters.command(["template", "sablon"]))
-async def template_menu(client, message: Message):
-    buttons = [
-        [InlineKeyboardButton("💍 WEDDING", callback_data="template_wedding"),
-         InlineKeyboardButton("🎉 PROMO", callback_data="template_promo")],
-        [InlineKeyboardButton("📂 Tüm Şablonlar", callback_data="list_templates")]
-    ]
-    await message.reply_text(
-        "📂 **Hangi Şablonu Kullanmak İstersiniz?**",
-        reply_markup=InlineKeyboardMarkup(buttons)
-    )
- 
-@Mukesh.on_callback_query(filters.regex(r"^template_(.*)$"))
-async def handle_template_selection(client, query: CallbackQuery):
-    template_name = query.matches[0].group(1)
-    content, variables = get_template(template_name)
-    
-    if not content:
-        await query.answer("❌ Şablon bulunamadı!", show_alert=True)
-        return
-    
-    await query.message.edit_text(
-        f"📝 **{template_name.upper()} Şablonu**\n\n"
-        f"ℹ️ Gerekli Değişkenler: {', '.join(variables) or 'Yok'}\n\n"
-        "✏️ **Verileri Girin:**\n"
-        "Örnek: `isim=Ali tarih=01/01/2025`",
-        reply_markup=InlineKeyboardMarkup([
-            [InlineKeyboardButton("📤 Gönder", callback_data=f"send_{template_name}")],
-            [InlineKeyboardButton("❌ İptal", callback_data="cancel_template")]
-        ])
-    )
+async def template_command(client, message: Message):
+    try:
+        # Örnek şablonlar (dosya yerine kod içinde tanımlı)
+        templates = {
+            "wedding": "💍 Düğün Davetiyesi\n\nSevgili {isim},\n{tarih}'te {mekan}'da bekliyoruz!",
+            "promo": "🎉 PROMO KODU\n\nKupon: {kupon}\nSüre: {sure}"
+        }
+
+        if len(message.command) == 1:  # Sadece /template yazıldıysa
+            await message.reply_text(
+                "📜 **Mevcut Şablonlar:**\n\n" +
+                "\n".join([f"• `{name}`: {content.splitlines()[0]}" for name, content in templates.items()]) +
+                "\n\nKullanım: `/template wedding isim=Ali tarih=01/01 mekan=Otel`"
+            )
+            return
+
+        template_name = message.command[1]
+        if template_name not in templates:
+            await message.reply_text("❌ Geçersiz şablon! `/template` yazarak listeyi görün.")
+            return
+
+        # Değişkenleri ayıkla (isim=Ali tarih=01/01 → {'isim':'Ali', 'tarih':'01/01'})
+        variables = dict(re.findall(r"(\w+)=([^\s]+)", " ".join(message.command[2:])))
+        
+        # Şablonu doldur
+        filled_template = templates[template_name].format(**variables)
+        
+        await message.reply_text(
+            f"✅ **{template_name.upper()} Şablonu**\n\n{filled_template}",
+            reply_markup=InlineKeyboardMarkup([
+                [InlineKeyboardButton("📤 Gönder", callback_data=f"send_{template_name}")]
+            ])
+        )
+
+    except KeyError as e:
+        await message.reply_text(f"⚠️ Eksik değişken: {str(e)}")
+    except Exception as e:
+        await message.reply_text(f"❌ Hata: {str(e)}")
 
 @Mukesh.on_message(filters.regex(r"(\w+)=(.+)"))
 async def process_template(client, message: Message):
