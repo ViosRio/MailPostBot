@@ -172,21 +172,20 @@ async def template_menu(client, message: Message):
     buttons = [
         [InlineKeyboardButton("💍 WEDDING", callback_data="template_wedding"),
          InlineKeyboardButton("🎉 PROMO", callback_data="template_promo")],
-        [InlineKeyboardButton("📂 Tüm Şablonlar", callback_data="list_all_templates")]
+        [InlineKeyboardButton("📂 Tüm Şablonlar", callback_data="list_templates")]
     ]
     await message.reply_text(
         "📂 **Hangi Şablonu Kullanmak İstersiniz?**",
         reply_markup=InlineKeyboardMarkup(buttons)
     )
  
-
 @Mukesh.on_callback_query(filters.regex(r"^template_(.*)$"))
 async def handle_template_selection(client, query: CallbackQuery):
     template_name = query.matches[0].group(1)
     content, variables = get_template(template_name)
     
     if not content:
-        await query.answer("❌ Şablon Bulunamadı!", show_alert=True)
+        await query.answer("❌ Şablon bulunamadı!", show_alert=True)
         return
     
     await query.message.edit_text(
@@ -196,17 +195,24 @@ async def handle_template_selection(client, query: CallbackQuery):
         "Örnek: `isim=Ali tarih=01/01/2025`",
         reply_markup=InlineKeyboardMarkup([
             [InlineKeyboardButton("📤 Gönder", callback_data=f"send_{template_name}")],
-            [InlineKeyboardButton("❌ İptal", callback_data="cancel")]
+            [InlineKeyboardButton("❌ İptal", callback_data="cancel_template")]
         ])
     )
-    
-    # Sonraki adım için kullanıcı durumunu kaydet
 
-# Şablon Değişkenlerini Bulma
-def get_template_vars(template_file):
-    with open(f"templates/{template_file}", "r") as f:
-        content = f.read()
-    return list(set(re.findall(r"\{(.*?)\}", content)))
+@Mukesh.on_message(filters.regex(r"(\w+)=(.+)"))
+async def process_template(client, message: Message):
+    if "=template_pending" not in message.text:  # Önceki adımdan kontrol
+        return
+    
+    # Değişkenleri ayıkla (isim=Ali tarih=01/01/2025 → {'isim':'Ali', 'tarih':'01/01/2025'})
+    variables = dict(re.findall(r"(\w+)=(.+)", message.text))
+    
+    # Şablonu doldur ve gönder
+    content, _ = get_template("wedding")  # Örnek
+    filled_content = content.format(**variables)
+    
+    await message.reply_text(f"✅ Şablon hazır!\n\n{filled_content}")
+
 
 # brevo mail buraya hacı abi
 @Mukesh.on_message(filters.command(["brevo"]))
